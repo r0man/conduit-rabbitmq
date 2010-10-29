@@ -1,10 +1,8 @@
 (ns conduit.rabbitmq
-  (:use
-     conduit.core)
-  (:import
-   [com.rabbitmq.client Connection ConnectionFactory Channel
-    MessageProperties QueueingConsumer]
-   [java.util UUID]))
+  (:use conduit.core)
+  (:import [com.rabbitmq.client Connection ConnectionFactory Channel
+            MessageProperties QueueingConsumer]
+           [java.util UUID]))
 
 (declare *channel*)
 (declare *exchange*)
@@ -34,10 +32,11 @@
                    (.getBytes msg-str))))
 
 (defn get-msg
-  ([queue] (try
-            (.nextDelivery (consumer queue))
-            (catch InterruptedException e
-              nil)))
+  ([queue]
+     (try
+       (.nextDelivery (consumer queue))
+       (catch InterruptedException e
+         nil)))
   ([queue msecs] (.nextDelivery (consumer queue) msecs)))
 
 (defn read-msg [m]
@@ -94,8 +93,8 @@
      :no-reply (rabbitmq-pub-no-reply source id)
      :scatter-gather (rabbitmq-sg-fn source reply-id)
      :parts (assoc (:parts proc)
-                   source {id (:no-reply proc)
-                           reply-id (reply-fn (:reply proc))})}))
+              source {id (:no-reply proc)
+                      reply-id (reply-fn (:reply proc))})}))
 
 (defn msg-stream [queue & [msecs]]
   (let [consumer (consumer queue)]
@@ -130,4 +129,3 @@
                                          select-handler))]
         (declare-queue queue)
         (dorun (a-run handler-fn))))))
-
