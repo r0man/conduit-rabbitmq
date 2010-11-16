@@ -111,12 +111,9 @@
             nil))))))
 
 (defn msg-handler-fn [f msg]
-  (try
-    (let [new-f (second (f (read-msg msg)))]
-      (ack-message msg)
-      [[] (partial msg-handler-fn new-f)])
-    (catch Exception e
-      [[] f])))
+  (let [new-f (second (f (read-msg msg)))]
+    (ack-message msg)
+    [[] (partial msg-handler-fn new-f)]))
 
 (defn rabbitmq-run [p queue channel exchange & [msecs]]
   (when-let [handler-map (get-in p [:parts queue])]
