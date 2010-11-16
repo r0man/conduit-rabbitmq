@@ -113,14 +113,11 @@
 (def *conduit-rabbitmq-id* nil)
 
 (defn msg-handler-fn [f msg]
-  (try
-    (let [[id arg] (read-msg msg)
-          [_ new-f] (binding [*conduit-rabbitmq-id* id]
-                      (f [id arg]))]
-      (ack-message msg)
-      [[] (partial msg-handler-fn new-f)])
-    (catch Exception e
-      [[] f])))
+  (let [[id arg] (read-msg msg)
+        [_ new-f] (binding [*conduit-rabbitmq-id* id]
+                    (f [id arg]))]
+    (ack-message msg)
+    [[] (partial msg-handler-fn new-f)]))
 
 (defn rabbitmq-run [p queue channel exchange & [msecs]]
   (when-let [handler-map (get-in p [:parts queue])]
