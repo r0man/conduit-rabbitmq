@@ -112,13 +112,10 @@
 
 (def *conduit-rabbitmq-id* nil)
 
-(defn bind-id [f]
-  (fn [[id msg]]
-    (binding [*conduit-rabbitmq-id* id]
-      (f [id msg]))))
-
 (defn msg-handler-fn [f msg]
-  (let [new-f (second ((bind-id f) (read-msg msg)))]
+  (let [[id arg] (read-msg msg)
+        [_ new-f] (binding [*conduit-rabbitmq-id* id]
+                    (f [id arg]))]
     (ack-message msg)
     [[] (partial msg-handler-fn new-f)]))
 
