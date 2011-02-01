@@ -9,21 +9,12 @@
 
 (defn rabbitmq-connection [host vhost user password]
   "Create a simple rabbitmq connection."
-  ;; for rabbitmq client 1.7.2
-  (let [params (doto (ConnectionParameters.)
-                 (.setVirtualHost vhost)
-                 (.setUsername "guest")
-                 (.setPassword "guest"))
-        factory (ConnectionFactory. params)]
-    (.newConnection factory "localhost"))
-
-  ;; for rabbitmq client 1.8.0
-  #_(.newConnection
-    (doto (ConnectionFactory.)
-      (.setHost host)
-      (.setVirtualHost vhost)
-      (.setUsername user)
-      (.setPassword password))))
+  (.newConnection
+   (doto (ConnectionFactory.)
+     (.setHost host)
+     (.setVirtualHost vhost)
+     (.setUsername user)
+     (.setPassword password))))
 
 (declare *connection*)
 (declare *queue*)
