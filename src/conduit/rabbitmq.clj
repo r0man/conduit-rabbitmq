@@ -92,9 +92,9 @@
      :reply (rabbitmq-pub-reply source reply-id)
      :no-reply (rabbitmq-pub-no-reply source id)
      :scatter-gather (rabbitmq-sg-fn source reply-id)
-     :parts (assoc (:parts proc)
-              source {id (:no-reply proc)
-                      reply-id (reply-fn (:reply proc))})}))
+     :parts (merge-with merge (:parts proc)
+                        {source {id (:no-reply proc)
+                                 reply-id (reply-fn (:reply proc))}})}))
 
 (defn msg-stream [queue & [msecs]]
   (let [consumer (consumer queue)]
