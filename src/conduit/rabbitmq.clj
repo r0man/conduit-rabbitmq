@@ -12,9 +12,12 @@
              *exchange* ~exchange]
      ~@body))
 
-(defn declare-queue [queue]
-  (.queueDeclare *channel* queue false false false false {})
-  (.queueBind *channel* queue *exchange* queue))
+(defn declare-queue
+  ([queue]
+     (declare-queue queue false))
+  ([queue autodelete]
+     (.queueDeclare *channel* queue false false autodelete {})
+     (.queueBind *channel* queue *exchange* queue)))
 
 (defn purge-queue [queue]
   (.queuePurge *channel* queue))
@@ -50,8 +53,7 @@
 (defn rabbitmq-pub-reply [source id]
   (fn rabbitmq-reply [x]
     (let [reply-queue (str (UUID/randomUUID))]
-      (.queueDeclare *channel* reply-queue false false false true {})
-      (.queueBind *channel* reply-queue *exchange* reply-queue)
+      (declare-queue reply-queue true)
       (publish source [id [x reply-queue]])
       (let [msg (get-msg reply-queue)]
         (ack-message msg)
@@ -60,8 +62,7 @@
 (defn rabbitmq-sg-fn [source id]
   (fn rabbitmq-reply [x]
     (let [reply-queue (str (UUID/randomUUID))]
-      (.queueDeclare *channel* reply-queue false false false true {})
-      (.queueBind *channel* reply-queue *exchange* reply-queue)
+      (declare-queue reply-queue true)
       (publish source [id [x reply-queue]])
       (fn []
         (let [msg (get-msg reply-queue)]
