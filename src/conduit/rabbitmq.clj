@@ -16,7 +16,7 @@
   ([queue]
      (declare-queue queue false))
   ([queue autodelete]
-     (.queueDeclare *channel* queue false false autodelete {})
+     (.queueDeclare *channel* queue true false autodelete {})
      (.queueBind *channel* queue *exchange* queue)))
 
 (defn purge-queue [queue]
