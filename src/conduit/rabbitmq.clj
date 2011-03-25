@@ -111,6 +111,32 @@
           (catch InterruptedException e
             nil))))))
 
+(def *high-priority-timeout* 1000)
+
+(defn priority-msg-stream [queues & [msecs]]
+  (let [consumers (for [[q w] (sort-by second queues)] (consumer q))]
+    (if msecs
+      (fn this-fn1 [x]
+        (try
+          (loop [[c & cs] consumers]
+            (let [msg (.nextDelivery c msecs)]
+              (cond
+               msg [[msg] this-fn1]
+               (seq cs) (recur cs)
+               :else nil)))
+          (catch InterruptedException e
+            nil)))
+      (fn this-fn2 [x]
+        (try
+          (loop [[c & cs] consumers wait *high-priority-timeout*]
+            (let [msg (.nextDelivery c (long wait))]
+              (cond
+               msg [[msg] this-fn2]
+               (seq cs) (recur cs (/ wait 2))
+               :else (recur consumers *high-priority-timeout*))))
+          (catch InterruptedException e
+            nil))))))
+
 (def *conduit-rabbitmq-id* nil)
 
 (defn msg-handler-fn [f msg]
@@ -130,4 +156,19 @@
                                 (partial msg-handler-fn
                                          select-handler))]
         (declare-queue queue)
+        (dorun (a-run handler-fn))))))
+
+(defn rabbitmq-priority-run [p queues channel exchange & [msecs]]
+  (when-let [handler-map (apply merge-with
+                                merge
+                                (map #(get-in p [:parts %]) (keys queues)))]
+    (binding [*channel* channel
+              *exchange* exchange]
+      (let [select-handler (partial select-fn handler-map)
+            handler-fn (comp-fn (priority-msg-stream msg-stream queues msecs)
+                                (partial msg-handler-fn
+                                         select-handler))]
+        (declare-queue queue)
+        (doseq [[q _] queues]
+          (declare-queue q))
         (dorun (a-run handler-fn))))))
