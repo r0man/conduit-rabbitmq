@@ -168,7 +168,6 @@
             handler-fn (comp-fn (priority-msg-stream msg-stream queues msecs)
                                 (partial msg-handler-fn
                                          select-handler))]
-        (declare-queue queue)
         (doseq [[q _] queues]
           (declare-queue q))
         (dorun (a-run handler-fn))))))
