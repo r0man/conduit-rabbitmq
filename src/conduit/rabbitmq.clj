@@ -24,7 +24,7 @@
 
 (defn consumer [queue]
   (let [consumer (QueueingConsumer. *channel*)]
-    (.basicConsume *channel* queue, false, consumer)
+    (.basicConsume *channel* queue false consumer)
     consumer))
 
 (defn publish [queue msg]
