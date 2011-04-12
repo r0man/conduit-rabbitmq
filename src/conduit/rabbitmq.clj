@@ -99,17 +99,15 @@
 
 (defn msg-stream [queue & [msecs]]
   (let [consumer (consumer queue)]
-    (if msecs
-      (fn this-fn1 [x]
-        (let [msg (.nextDelivery consumer msecs)]
+    (fn stream-reader [x]
+      (try
+        (let [msg (if msecs
+                    (.nextDelivery consumer msecs)
+                    (.nextDelivery consumer))]
           (when msg
-            [[msg] this-fn1])))
-      (fn this-fn2 [x]
-        (try
-          (let [msg (.nextDelivery consumer)]
-            [[msg] this-fn2])
-          (catch InterruptedException e
-            nil))))))
+            [[msg] stream-reader]))
+        (catch InterruptedException e
+          nil)))))
 
 (def *conduit-rabbitmq-id* nil)
 
