@@ -3,5 +3,5 @@
   :dependencies [[org.clojure/clojure "1.2.0"]
                  [org.clojure/clojure-contrib "1.2.0"]
                  [com.rabbitmq/amqp-client "2.3.1"]
-                 [conduit "0.8.0"]]
+                 [conduit "0.8.1"]]
   :repositories {"lambda" "http://lambda.sa2s.us/snapshots/"})
