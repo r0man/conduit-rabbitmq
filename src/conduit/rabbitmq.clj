@@ -52,7 +52,10 @@
 
 (defn rabbitmq-pub-reply [source id]
   (fn rabbitmq-reply [x]
-    (let [reply-queue (str (UUID/randomUUID))]
+    (let [source (if (fn? source)
+                   (str (source x))
+                   source)
+          reply-queue (str (UUID/randomUUID))]
       (declare-queue reply-queue true)
       (publish source [id [x reply-queue]])
       (let [msg (get-msg reply-queue)]
@@ -61,7 +64,10 @@
 
 (defn rabbitmq-sg-fn [source id]
   (fn rabbitmq-reply [x]
-    (let [reply-queue (str (UUID/randomUUID))]
+    (let [source (if (fn? source)
+                   (str (source x))
+                   source)
+          reply-queue (str (UUID/randomUUID))]
       (declare-queue reply-queue true)
       (publish source [id [x reply-queue]])
       (fn []
@@ -71,7 +77,10 @@
 
 (defn rabbitmq-pub-no-reply [source id]
   (fn rabbitmq-no-reply [x]
-    (publish source [id x])
+    (let [source (if (fn? source)
+                   (str (source x))
+                   source)]
+      (publish source [id x]))
     [[] rabbitmq-no-reply]))
 
 (defn reply-fn [f]
@@ -81,21 +90,44 @@
                [[] (partial rabbitmq-reply-fn new-f)]))
            f))
 
-(defn a-rabbitmq [source id proc]
-  (let [source (str source)
-        id (str id)
-        reply-id (str id "-reply")]
-    {:type :rabbitmq
-     :created-by (:created-by proc)
-     :args (:args proc)
-     :source source
-     :id id
-     :reply (rabbitmq-pub-reply source reply-id)
-     :no-reply (rabbitmq-pub-no-reply source id)
-     :scatter-gather (rabbitmq-sg-fn source reply-id)
-     :parts (merge-with merge (:parts proc)
-                        {source {id (:no-reply proc)
-                                 reply-id (reply-fn (:reply proc))}})}))
+(defn a-rabbitmq
+  ([source id proc]
+     (if (fn? source)
+       (throw (Exception. (str "Return values for 'source' function "
+                               "must be supplied."))))
+     (let [source (str source)
+           id (str id)
+           reply-id (str id "-reply")]
+       {:type :rabbitmq
+        :created-by (:created-by proc)
+        :args (:args proc)
+        :source source
+        :id id
+        :reply (rabbitmq-pub-reply source reply-id)
+        :no-reply (rabbitmq-pub-no-reply source id)
+        :scatter-gather (rabbitmq-sg-fn source reply-id)
+        :parts (merge-with merge (:parts proc)
+                           {source {id (:no-reply proc)
+                                    reply-id (reply-fn (:reply proc))}})}))
+  ([source-fn sources id proc]
+     (let [sources (set (map str sources))
+           id (str id)
+           reply-id (str id "-reply")
+           part {id (:no-reply proc)
+                 reply-id (reply-fn (:reply proc))}
+           new-parts (into {}
+                           (map #(vector % part)
+                                sources))]
+       {:type :rabbitmq
+        :created-by (:created-by proc)
+        :args (:args proc)
+        :source source-fn
+        :id id
+        :reply (rabbitmq-pub-reply source-fn reply-id)
+        :no-reply (rabbitmq-pub-no-reply source-fn id)
+        :scatter-gather (rabbitmq-sg-fn source-fn reply-id)
+        :parts (merge-with merge (:parts proc)
+                           new-parts)})))
 
 (defn msg-stream [queue & [msecs]]
   (let [consumer (consumer queue)]
