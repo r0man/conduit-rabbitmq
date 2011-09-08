@@ -34,6 +34,12 @@
                    (MessageProperties/PERSISTENT_TEXT_PLAIN)
                    (.getBytes msg-str))))
 
+(defn publish-work [source id msg]
+  (let [source (if (fn? source)
+                 (str (source msg))
+                 source)]
+    (publish source [id msg])))
+
 (defn get-msg
   ([queue]
      (try
@@ -52,24 +58,18 @@
 
 (defn rabbitmq-pub-reply [source id]
   (fn rabbitmq-reply [x]
-    (let [source (if (fn? source)
-                   (str (source x))
-                   source)
-          reply-queue (str (UUID/randomUUID))]
+    (let [reply-queue (str (UUID/randomUUID))]
       (declare-queue reply-queue true)
-      (publish source [id [x reply-queue]])
+      (publish-work source id [x reply-queue])
       (let [msg (get-msg reply-queue)]
         (ack-message msg)
         [(read-msg msg) rabbitmq-reply]))))
 
 (defn rabbitmq-sg-fn [source id]
   (fn rabbitmq-reply [x]
-    (let [source (if (fn? source)
-                   (str (source x))
-                   source)
-          reply-queue (str (UUID/randomUUID))]
+    (let [reply-queue (str (UUID/randomUUID))]
       (declare-queue reply-queue true)
-      (publish source [id [x reply-queue]])
+      (publish-work source id [x reply-queue])
       (fn []
         (let [msg (get-msg reply-queue)]
           (ack-message msg)
@@ -77,10 +77,7 @@
 
 (defn rabbitmq-pub-no-reply [source id]
   (fn rabbitmq-no-reply [x]
-    (let [source (if (fn? source)
-                   (str (source x))
-                   source)]
-      (publish source [id x]))
+    (publish-work source id x)
     [[] rabbitmq-no-reply]))
 
 (defn reply-fn [f]
