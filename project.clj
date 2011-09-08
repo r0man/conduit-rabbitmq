@@ -1,4 +1,4 @@
-(defproject conduit-rabbitmq "0.9.2"
+(defproject conduit-rabbitmq "0.9.3-SNAPSHOT"
   :description "Conduit Rabbitmq: Conduit Transport for RabbitMQ"
   :dependencies [[org.clojure/clojure "1.2.0"]
                  [org.clojure/clojure-contrib "1.2.0"]
