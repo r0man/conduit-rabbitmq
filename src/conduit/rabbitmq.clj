@@ -4,8 +4,8 @@
             MessageProperties QueueingConsumer]
            [java.util UUID]))
 
-(declare *channel*)
-(declare *exchange*)
+(declare ^:dynamic *channel*)
+(declare ^:dynamic *exchange*)
 
 (defmacro conduit-rabbitmq [channel exchange & body]
   `(binding [*channel* ~channel
@@ -138,7 +138,7 @@
         (catch InterruptedException e
           nil)))))
 
-(def *conduit-rabbitmq-id* nil)
+(def ^:dynamic *conduit-rabbitmq-id* nil)
 
 (defn msg-handler-fn [f msg]
   (let [[id arg] (read-msg msg)

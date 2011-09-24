@@ -24,8 +24,9 @@
       (.setUsername user)
       (.setPassword password))))
 
-(declare *connection*)
-(declare *queue*)
+(declare ^:dynamic *connection*)
+(declare ^:dynamic *queue*)
+
 (defn rabbitmq-test-fixture [f]
   (with-open [connection (rabbitmq-connection "localhost" "/" "guest" "guest")
               channel (.createChannel connection)]
